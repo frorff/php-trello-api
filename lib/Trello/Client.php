@@ -60,7 +60,7 @@ class Client implements ClientInterface
      * @var array
      */
     private $options = [
-        'base_url' => 'https://api.trello.com/',
+        'base_uri' => 'https://api.trello.com/',
         'user_agent' => 'php-trello-api (http://github.com/cdaguerre/php-trello-api)',
         'timeout' => 10,
         'api_limit' => 5000,
@@ -149,32 +149,16 @@ class Client implements ClientInterface
      *
      * @param string $tokenOrLogin Trello private token/username/client ID
      * @param null|string $password Trello password/secret (optionally can contain $authMethod)
-     * @param null|string $authMethod One of the AUTH_* class constants
      *
      * @throws InvalidArgumentException If no authentication method was given
      */
-    public function authenticate($tokenOrLogin, $password = null, $authMethod = null)
+    public function authenticate($tokenOrLogin, $password = null)
     {
-        if (null === $password && null === $authMethod) {
+        if (null === $password) {
             throw new InvalidArgumentException('You need to specify authentication method!');
         }
 
-        $valid = [
-            self::AUTH_URL_TOKEN,
-            self::AUTH_URL_CLIENT_ID,
-            self::AUTH_HTTP_PASSWORD,
-            self::AUTH_HTTP_TOKEN
-        ];
-        if (null === $authMethod && in_array($password, $valid)) {
-            $authMethod = $password;
-            $password = null;
-        }
-
-        if (null === $authMethod) {
-            $authMethod = self::AUTH_HTTP_PASSWORD;
-        }
-
-        $this->getHttpClient()->authenticate($tokenOrLogin, $password, $authMethod);
+        $this->getHttpClient()->authenticate($tokenOrLogin, $password);
     }
 
     /**

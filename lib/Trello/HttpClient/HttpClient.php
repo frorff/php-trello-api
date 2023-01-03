@@ -2,20 +2,15 @@
 
 namespace Trello\HttpClient;
 
-use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Message\Request;
-use GuzzleHttp\Message\Response;
 use Trello\Exception\ErrorException;
 use Trello\Exception\RuntimeException;
-use Trello\HttpClient\Listener\AuthListener;
-use Trello\HttpClient\Listener\ErrorListener;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class HttpClient implements HttpClientInterface
 {
     protected $options = [
-        'base_url' => 'https://api.trello.com/',
+        'base_uri' => 'https://api.trello.com/',
         'user_agent' => 'php-trello-api (http://github.com/cdaguerre/php-trello-api)',
         'timeout' => 10,
         'api_version' => 1,
@@ -38,10 +33,9 @@ class HttpClient implements HttpClientInterface
     public function __construct(array $options = [], ClientInterface $client = null)
     {
         $this->options = array_merge($this->options, $options);
-        $client = $client ?: new GuzzleClient($this->options);
+        $client = $client ?: new Client($this->options);
         $this->client = $client;
 
-        $this->addListener('request.error', [new ErrorListener(), 'onRequestError']);
         $this->clearHeaders();
     }
 
@@ -162,16 +156,15 @@ class HttpClient implements HttpClientInterface
     /**
      * {@inheritDoc}
      */
-    public function authenticate($tokenOrLogin, $password, $method)
+    public function authenticate($tokenOrLogin, $password)
     {
-        $this->addListener('request.before_send', [
-            new AuthListener($tokenOrLogin, $password, $method),
-            'onRequestBeforeSend',
+        $this->setHeaders([
+            'Authorization' => 'OAuth oauth_consumer_key="' . $tokenOrLogin . '", oauth_token="' . $password . '"'
         ]);
     }
 
     /**
-     * @return Request
+     * @return mixed
      */
     public function getLastRequest()
     {
@@ -179,7 +172,7 @@ class HttpClient implements HttpClientInterface
     }
 
     /**
-     * @return Response
+     * @return mixed
      */
     public function getLastResponse()
     {
@@ -187,10 +180,12 @@ class HttpClient implements HttpClientInterface
     }
 
     /**
-     * @param string $httpMethod
-     * @param string $path
-     *
-     * @return Request|\GuzzleHttp\Message\RequestInterface
+     * @param $httpMethod
+     * @param $path
+     * @param $body
+     * @param array $headers
+     * @param array $options
+     * @return array
      */
     protected function createRequest($httpMethod, $path, $body = null, array $headers = [], array $options = [])
     {
@@ -201,9 +196,13 @@ class HttpClient implements HttpClientInterface
             $path .= utf8_encode(http_build_query($body, '', '&'));
         }
 
-        $options['body'] = $body;
+        $options['body'] = $body ? http_build_query($body) : null;
         $options['headers'] = array_merge($this->headers, $headers);
 
-        return $this->client->createRequest($httpMethod, $path, $options);
+        return [
+            'httpMethod' => $httpMethod,
+            'path' => $path,
+            'options' => $options
+        ];
     }
 }

@@ -101,10 +101,9 @@ interface HttpClientInterface
      *
      * @param string $tokenOrLogin Trello private token/username/client ID
      * @param null|string $password Trello password/secret (optionally can contain $authMethod)
-     * @param null|string $authMethod One of the AUTH_* class constants
      *
      * @return void
      * @throws InvalidArgumentException If no authentication method was given
      */
-    public function authenticate($tokenOrLogin, $password, $authMethod);
+    public function authenticate($tokenOrLogin, $password);
 }
